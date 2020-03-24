@@ -22,30 +22,28 @@
 
 ### Rocket.Chat Apps Setup   
 
-First go ahead n create a Bot User. Goto `Setting > Users`. This new user should have these 2 roles.</br>
-1. bot
-2. livechat-agent
+1. First go ahead n create a Bot User. Goto `Setting > Users`. This new user should have these 2 roles.</br>
+    1. bot
+    2. livechat-agent
 
-Then configure the app to automatically assign a livechat-visitor to this bot. To do so, goto `Setting > Livechat > Routing`. There enable `Assign new conversations to bot agent` Setting.
+2. Then configure the app to automatically assign a livechat-visitor to this bot. To do so, goto `Setting > Livechat > Routing`. There enable `Assign new conversations to bot agent` Setting.
 
-Then create a new Department from Livechat Admin Panel, n assign the above created user to this department.
+3. Then create a new Department from Livechat Admin Panel, n assign the above created user to this department.
 
-Lastly, the app needs some configurations to work, so to setup the app Go to `Setting > Apps > RASA-Plugin`. There fill all the necessary fields in `SETTINGS` and click SAVE. Note all fields are required. 
+4. Lastly, the app needs some configurations to work, so to setup the app Go to `Setting > Apps > RASA-Plugin`. There, fill all the necessary fields in `SETTINGS` and click SAVE. Note all fields are required. 
     
-Some of the fields in `SETTING` include    
-1. RASA Server URL
-    - Here enter the RASA url where the RASA server is hosted.
-    - Make sure to add `/webhooks/rest/webhook` to the url
-    - example:</br> http://efee760b.ngrok.io/webhooks/rest/webhook
-2. LiveChat Bot Username
-    - Make sure that this user has 2 roles
-        - bot
-        - livechat-agent
-3. LiveChat Bot Password
-    - Password for the above username
-4. Handover Target Department Name
-    - Enter the department name where a visitor will be transfered upon handover.
-    - Note that this should **not** be the department where the above created Bot User is, otherwise the handover feature wouldn't work. 
+    Some of the fields in `SETTING` include    
+    1. RASA Server URL
+        - Here enter the RASA url where the RASA server is hosted.
+        - Make sure to add `/webhooks/rest/webhook` to the url
+        - example:</br> http://efee760b.ngrok.io/webhooks/rest/webhook
+    2. LiveChat Bot Username
+        - This should contain the same bot username which we created above in Step 1
+    3. LiveChat Bot Password
+        - Password for the above username
+    4. Handover Target Department Name
+        - Enter the department name where a visitor will be transfered upon handover.
+        - Please make sure that this department should not contain the Bot User we created in Step 1, otherwise the handover feature won't work. 
 
 
 ### Some additional Configs for RASA  
