@@ -15,6 +15,8 @@ import { App } from '@rocket.chat/apps-engine/definition/App';
 import { IMessage, IPostMessageSent } from '@rocket.chat/apps-engine/definition/messages';
 import { IAppInfo } from '@rocket.chat/apps-engine/definition/metadata';
 import { ISetting, SettingType } from '@rocket.chat/apps-engine/definition/settings';
+import { ILivechatMessage, ILivechatRoom } from '@rocket.chat/apps-engine/definition/livechat';
+import { IUser } from '@rocket.chat/apps-engine/definition/users';
 
 export class RasaPluginApp extends App implements IPostMessageSent {
     constructor(info: IAppInfo, logger: ILogger, accessors: IAppAccessors) {
@@ -29,22 +31,30 @@ export class RasaPluginApp extends App implements IPostMessageSent {
     public async executePostMessageSent(
         message: IMessage, read: IRead, http: IHttp, persistence: IPersistence,
         modify: IModify): Promise<void> {
-        // Debug
-        // this.getLogger().log(`app.${ this.getNameSlug() }`);
-        this.getLogger().log(message.sender.username);
-        this.getLogger().log("Room type--> " + message.room.type);
-        this.getLogger().log("roles--> " + message.sender.roles);
-        if (message.sender.username === `app.${ this.getNameSlug() }`) {
-            return;
-        } else if (message.room.type === 'l' && message.sender.roles && message.sender.roles.indexOf('livechat-agent') > -1) {
-            // it is livechat agent message
+        const SettingBotUsername: string = (await read.getEnvironmentReader().getSettings().getById('Lc-Bot-Username')).value;
+        if (message.sender.username === SettingBotUsername) {
             return;
         } else if (message.room.type !== 'l') {
-            // not a livechat room message
             return;
         }
 
+        const lmessage: ILivechatMessage = message;
+        const lroom: ILivechatRoom = lmessage.room as ILivechatRoom;
+        let lBotUser: IUser = message.sender; // tmp assignment since lroom.servedBy can be undefined
+        if (lroom.servedBy) {
+            lBotUser = lroom.servedBy;
+        }
 
+        // Debug
+        // this.getLogger().log(`app.${ this.getNameSlug() }`);
+        this.getLogger().log(message.sender.username);
+        this.getLogger().log('Room type--> ' + message.room.type);
+        this.getLogger().log('roles--> ' + message.sender.roles);
+        this.getLogger().log('served by --> ' + lBotUser.username);
+
+        if (SettingBotUsername !== lBotUser.username) {
+            return;
+        }
 
         // --> content of post message
         // {
@@ -57,8 +67,9 @@ export class RasaPluginApp extends App implements IPostMessageSent {
                 'Content-Type': 'application/json',
             },
             data: {
-                'sender': 'test_user_' + this.randomInt(1, 100000),     // create a random session key
-                'message': message.text,
+                // TODO:- Add appropriate session Key in sender field
+                sender: 'test_user_' + this.randomInt(1, 100000),     // create a random session key
+                message: message.text,
             },
         };
 
@@ -80,7 +91,7 @@ export class RasaPluginApp extends App implements IPostMessageSent {
                 );
 
                 const builder = modify.getNotifier().getMessageBuilder();
-                builder.setRoom(message.room).setText(concatMessage);
+                builder.setRoom(message.room).setText(concatMessage).setSender(lBotUser);
                 modify.getCreator().finish(builder);
             },
         ).catch(
@@ -107,6 +118,15 @@ export class RasaPluginApp extends App implements IPostMessageSent {
             i18nLabel: 'RASA Server URL',
             required: true,
         };
+        const LcBotUsername: ISetting = {
+            id: 'Lc-Bot-Username',
+            public: true,
+            type: SettingType.STRING,
+            packageValue: '',
+            i18nLabel: 'Livechat Bot Username',
+            required: true,
+        };
         configuration.settings.provideSetting(RasaServerISetting);
+        configuration.settings.provideSetting(LcBotUsername);
     }
 }
