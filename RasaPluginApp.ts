@@ -15,7 +15,7 @@ import { App } from '@rocket.chat/apps-engine/definition/App';
 import { IMessage, IPostMessageSent } from '@rocket.chat/apps-engine/definition/messages';
 import { IAppInfo } from '@rocket.chat/apps-engine/definition/metadata';
 import { ISetting, SettingType } from '@rocket.chat/apps-engine/definition/settings';
-import { ILivechatMessage, ILivechatRoom } from '@rocket.chat/apps-engine/definition/livechat';
+import { ILivechatMessage, ILivechatRoom, IVisitor, ILivechatTransferData } from '@rocket.chat/apps-engine/definition/livechat';
 import { IUser } from '@rocket.chat/apps-engine/definition/users';
 
 export class RasaPluginApp extends App implements IPostMessageSent {
@@ -55,6 +55,63 @@ export class RasaPluginApp extends App implements IPostMessageSent {
         if (SettingBotUsername !== lBotUser.username) {
             return;
         }
+
+        // CHECK HANDOVER
+        if (message.text === 'perform_handover') {
+            this.getLogger().log('handover action start');
+            // perform authentication
+            const authHttpRequest: IHttpRequest = {
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                data: {
+                    user: 'murtaza98',
+                    password: '12345',
+                },
+            };
+
+            http.post('http://localhost:3000/api/v1/login', authHttpRequest).then(
+                (loginResponse) => {
+                    // console.log(loginResponse.content);
+                    const loginResponseJSON = JSON.parse((loginResponse.content || '{}'));
+                    console.log(loginResponseJSON.data.userId);
+                    console.log(loginResponseJSON.data.authToken);
+                    console.log(message.room.id);
+
+                    const ForwardHttpRequest: IHttpRequest = {
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Auth-Token': loginResponseJSON.data.authToken,
+                            'X-User-Id': loginResponseJSON.data.userId,
+                        },
+                        data: {
+                            roomId: message.room.id,
+                            departmentId: 'FaNCjpwyqYD49LZdK',
+                        },
+                    };
+
+                    http.post('http://localhost:3000/api/v1/livechat/room.forward', ForwardHttpRequest).then(
+                        (forwardResponse) => {
+                            console.log(forwardResponse);
+                        },
+                    );
+                },
+            );
+
+            // parse access_token
+
+
+            // request room.forward endpoint
+
+
+
+
+            return;
+        }
+
+
+
+
 
         // --> content of post message
         // {
