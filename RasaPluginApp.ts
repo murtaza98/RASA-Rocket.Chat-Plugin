@@ -8,17 +8,21 @@ import {
     IModify,
     IPersistence,
     IRead,
+    IConfigurationExtend,
+    IEnvironmentRead,
 } from '@rocket.chat/apps-engine/definition/accessors';
 import { App } from '@rocket.chat/apps-engine/definition/App';
 import { IMessage, IPostMessageSent } from '@rocket.chat/apps-engine/definition/messages';
 import { IAppInfo } from '@rocket.chat/apps-engine/definition/metadata';
+import { ISetting, SettingType } from '@rocket.chat/apps-engine/definition/settings';
 
 export class RasaPluginApp extends App implements IPostMessageSent {
     constructor(info: IAppInfo, logger: ILogger, accessors: IAppAccessors) {
         super(info, logger, accessors);
     }
 
-    public async initialize(): Promise<void> {
+    public async initialize(configurationExtend: IConfigurationExtend, environmentRead: IEnvironmentRead): Promise<void> {
+        await this.extendConfiguration(configurationExtend);
         this.getLogger().log('App Initialized');
     }
 
@@ -27,10 +31,20 @@ export class RasaPluginApp extends App implements IPostMessageSent {
         modify: IModify): Promise<void> {
         // Debug
         // this.getLogger().log(`app.${ this.getNameSlug() }`);
-        // this.getLogger().log(message.sender.username);
+        this.getLogger().log(message.sender.username);
+        this.getLogger().log("Room type--> " + message.room.type);
+        this.getLogger().log("roles--> " + message.sender.roles);
         if (message.sender.username === `app.${ this.getNameSlug() }`) {
             return;
+        } else if (message.room.type === 'l' && message.sender.roles && message.sender.roles.indexOf('livechat-agent') > -1) {
+            // it is livechat agent message
+            return;
+        } else if (message.room.type !== 'l') {
+            // not a livechat room message
+            return;
         }
+
+
 
         // --> content of post message
         // {
@@ -48,7 +62,9 @@ export class RasaPluginApp extends App implements IPostMessageSent {
             },
         };
 
-        http.post('http://03e59c28.ngrok.io/webhooks/rest/webhook', httpRequest).then(
+        const RasaServerURL: string = (await read.getEnvironmentReader().getSettings().getById('RASA-Server-URL')).value;
+
+        http.post(RasaServerURL, httpRequest).then(
             (response) => {
                 this.getLogger().log('resolved');
                 console.log('-----------------------------' + (response.content || 'empty response'));
@@ -78,7 +94,19 @@ export class RasaPluginApp extends App implements IPostMessageSent {
      * @param {Number} max
      * @return {Number} random generated integer
      */
-    randomInt(min, max) {
+    protected randomInt(min, max) {
         return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    protected async extendConfiguration(configuration: IConfigurationExtend): Promise<void> {
+        const RasaServerISetting: ISetting = {
+            id: 'RASA-Server-URL',
+            public: true,
+            type: SettingType.STRING,
+            packageValue: '',
+            i18nLabel: 'RASA Server URL',
+            required: true,
+        };
+        configuration.settings.provideSetting(RasaServerISetting);
     }
 }
