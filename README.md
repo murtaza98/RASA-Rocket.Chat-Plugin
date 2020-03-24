@@ -20,12 +20,39 @@
     
     For more info refer [this](https://rocket.chat/docs/developer-guides/developing-apps/getting-started/) guide
 
-### Some additional Configs  
+### Rocket.Chat Apps Setup   
+
+First go ahead n create a Bot User. Goto `Setting > Users`. This new user should have these 2 roles.</br>
+1. bot
+2. livechat-agent
+
+Then configure the app to automatically assign a livechat-visitor to this bot. To do so, goto `Setting > Livechat > Routing`. There enable `Assign new conversations to bot agent` Setting.
+
+Then create a new Department from Livechat Admin Panel, n assign the above created user to this department.
+
+Lastly, the app needs some configurations to work, so to setup the app Go to `Setting > Apps > RASA-Plugin`. There fill all the necessary fields in `SETTINGS` and click SAVE. Note all fields are required. 
+    
+Some of the fields in `SETTING` include    
+1. RASA Server URL
+    - Here enter the RASA url where the RASA server is hosted.
+    - Make sure to add `/webhooks/rest/webhook` to the url
+    - example:</br> http://efee760b.ngrok.io/webhooks/rest/webhook
+2. LiveChat Bot Username
+    - Make sure that this user has 2 roles
+        - bot
+        - livechat-agent
+3. LiveChat Bot Password
+    - Password for the above username
+4. Handover Target Department Name
+    - Enter the department name where a visitor will be transfered upon handover.
+    - Note that this should **not** be the department where the above created Bot User is, otherwise the handover feature wouldn't work. 
+
+
+### Some additional Configs for RASA  
  - [Here's](https://medium.com/analytics-vidhya/learn-how-to-build-and-deploy-a-chatbot-in-minutes-using-rasa-5787fe9cce19) a sample RASA application tutorial for testing. After setting up a RASA server, u will have to change the server's URL in [RasaPluginApp.ts](https://github.com/murtaza98/RASA-Rocket.Chat-Plugin/blob/master/RasaPluginApp.ts) file.
  - To enable the RASA API use the following command:</br>
  `python -m  rasa_core.run -d models/current/dialogue -u models/current/nlu --endpoints endpoints.yml --enable_api --cors “*” --debug`
 
 ### TODO's    
- - add settings to RC app
- - handover feature
-
+ - add sync handover feature
+ - add async handover feature
